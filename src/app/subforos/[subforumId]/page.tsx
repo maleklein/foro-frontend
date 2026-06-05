@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
+import { bffFetch } from '@/lib/bff';
 import {
   MessageSquare,
   ChevronRight,
@@ -198,7 +199,7 @@ export default function SubforoPage() {
   useEffect(() => {
     async function loadInfo() {
       try {
-        const res = await fetch(`/api/subforums/${subforumId}`);
+        const res = await bffFetch(`/api/subforums/${subforumId}`);
         if (!res.ok) throw new Error('Subforo no encontrado');
         const data: SubforumInfo = await res.json();
         setSubforum(data);
@@ -217,7 +218,7 @@ export default function SubforoPage() {
       setLoadingThreads(true);
       setThreadsError(null);
       try {
-        const res = await fetch(
+        const res = await bffFetch(
           `/api/subforums/${subforumId}/threads?page=${p}&limit=${LIMIT}&sort=${s}`
         );
         if (!res.ok) throw new Error('No se pudieron cargar los hilos');

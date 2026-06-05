@@ -16,6 +16,7 @@ import { useState, useEffect } from 'react';
 
 // Componente Link de Next.js para navegar entre páginas sin recargar (SPA)
 import Link from 'next/link';
+import { bffFetch } from '@/lib/bff';
 
 // Íconos de la librería lucide-react (SVGs como componentes React)
 import { MessageSquare, FileText, Clock } from 'lucide-react';
@@ -273,7 +274,7 @@ export default function ForosPage() {
   useEffect(() => {
     async function fetchForums() {
       try {
-        const res = await fetch('/api/forums'); // Llama al endpoint interno de Next.js
+        const res = await bffFetch('/api/forums');
         if (!res.ok) throw new Error('No se pudieron cargar los foros. Intentá de nuevo.');
         const data: ForumGroup[] = await res.json();
         setGroups(data);

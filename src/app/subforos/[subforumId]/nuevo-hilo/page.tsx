@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { bffFetch } from '@/lib/bff';
 import { Paperclip, ChevronRight, AlertCircle, CheckCircle2, Tag, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -135,7 +136,7 @@ export default function NuevoHiloPage() {
   useEffect(() => {
     async function loadSubforum() {
       try {
-        const res = await fetch(`/api/subforums/${subforumId}`);
+        const res = await bffFetch(`/api/subforums/${subforumId}`);
         if (!res.ok) throw new Error('Subforo no encontrado');
         const data: SubforumInfo = await res.json();
         setSubforum(data);
@@ -203,7 +204,7 @@ export default function NuevoHiloPage() {
     const token = typeof window !== 'undefined' ? localStorage.getItem('mock-token') : null;
 
     try {
-      const res = await fetch('/api/threads', {
+      const res = await bffFetch('/api/threads', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

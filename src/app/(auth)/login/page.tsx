@@ -7,6 +7,7 @@ import { useState } from 'react'
 // useState: hook de React para guardar valores que, al cambiar, actualizan la pantalla.
 
 import Link from 'next/link'
+import { bffFetch } from '@/lib/bff'
 // Link: navega entre páginas de Next.js sin recargar el navegador.
 
 import { Eye, EyeOff, Loader2 } from 'lucide-react'
@@ -55,7 +56,7 @@ export default function LoginPage() {
 
     try {
       // Hace una petición POST al backend con email y contraseña como JSON.
-      const res = await fetch('/api/auth/login', {
+      const res = await bffFetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),

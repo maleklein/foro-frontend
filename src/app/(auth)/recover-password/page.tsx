@@ -7,6 +7,7 @@ import { useState } from 'react'
 // useState: hook de React para guardar y actualizar valores dentro del componente.
 
 import Link from 'next/link'
+import { bffFetch } from '@/lib/bff'
 // Link: componente de Next.js para navegar entre páginas sin recargar la página completa.
 
 import { ArrowLeft, Loader2, Mail } from 'lucide-react'
@@ -39,7 +40,7 @@ export default function RecoverPasswordPage() {
     try {
       // Hace una petición POST a la ruta del backend /api/auth/recover-password,
       // enviando el email del usuario en el cuerpo como JSON.
-      const res = await fetch('/api/auth/recover-password', {
+      const res = await bffFetch('/api/auth/recover-password', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email }),

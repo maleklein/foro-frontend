@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
+import { bffFetch } from '@/lib/bff';
 import {
   ChevronRight,
   ChevronLeft,
@@ -323,7 +324,7 @@ export default function HiloPage() {
   useEffect(() => {
     async function loadThread() {
       try {
-        const res = await fetch(`/api/threads/${threadId}`);
+        const res = await bffFetch(`/api/threads/${threadId}`);
         const data = await res.json();
         if (!res.ok) throw new Error(data.error ?? 'Hilo no encontrado');
         setThread(data as ThreadDetail);
@@ -344,7 +345,7 @@ export default function HiloPage() {
       setCommentsLoading(true);
       setCommentsError(null);
       try {
-        const res = await fetch(
+        const res = await bffFetch(
           `/api/threads/${threadId}/comments?page=${p}&limit=${LIMIT}&sort=recent`
         );
         if (!res.ok) throw new Error('No se pudieron cargar los comentarios');
@@ -376,7 +377,7 @@ export default function HiloPage() {
     }
     setVoting(true);
     try {
-      const res = await fetch(`/api/threads/${threadId}/vote`, {
+      const res = await bffFetch(`/api/threads/${threadId}/vote`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ value }),
@@ -404,7 +405,7 @@ export default function HiloPage() {
     setCommentError(null);
     const token = getToken();
     try {
-      const res = await fetch(`/api/threads/${threadId}/comments`, {
+      const res = await bffFetch(`/api/threads/${threadId}/comments`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
