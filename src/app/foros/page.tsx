@@ -10,13 +10,19 @@
 */
 
 // Hooks de React: estado y efectos secundarios
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 // useState: guarda datos que pueden cambiar (foros, loading, error).
 // useEffect: ejecuta código después de que el componente se monta (ej: llamar a la API).
+// useCallback: memoriza la función de fetch para reutilizarla (carga inicial + refresco).
 
 // Componente Link de Next.js para navegar entre páginas sin recargar (SPA)
 import Link from 'next/link';
 import { bffFetch } from '@/lib/bff';
+
+// Modal con el formulario para crear un nuevo foro.
+import { CreateForumDialog } from '@/components/forums/create-forum-dialog';
+// Botón reutilizable de la UI (para el acceso a login cuando no hay sesión).
+import { Button } from '@/components/ui/button';
 
 // Íconos de la librería lucide-react (SVGs como componentes React)
 import { MessageSquare, FileText, Clock } from 'lucide-react';
@@ -171,8 +177,6 @@ function SubforumRow({ subforum }: { subforum: SubforumItem }) {
 
 // Tarjeta que agrupa los subforos de un mismo foro (ej. "Ciencias de la Computación")
 function ForumCard({ forum }: { forum: ForumItem }) {
-  if (forum.subforums.length === 0) return null; // No mostrar si no tiene subforos
-
   return (
     <div className="border border-border rounded-lg overflow-hidden bg-card">
       {/* Cabecera del foro (solo si tiene nombre) */}
@@ -186,10 +190,17 @@ function ForumCard({ forum }: { forum: ForumItem }) {
           )}
         </div>
       )}
-      {/* Lista de subforos dentro de este foro */}
-      {forum.subforums.map((subforum) => (
-        <SubforumRow key={subforum.id} subforum={subforum} />
-      ))}
+      {/* Lista de subforos dentro de este foro. Si todavía no tiene ninguno
+          (ej: un foro recién creado), mostramos un estado vacío en vez de ocultarlo. */}
+      {forum.subforums.length > 0 ? (
+        forum.subforums.map((subforum) => (
+          <SubforumRow key={subforum.id} subforum={subforum} />
+        ))
+      ) : (
+        <p className="px-4 py-3 text-xs text-muted-foreground italic">
+          Aún no hay subforos en este foro.
+        </p>
+      )}
     </div>
   );
 }
@@ -269,23 +280,31 @@ export default function ForosPage() {
   const [groups, setGroups] = useState<ForumGroup[]>([]); // datos de foros agrupados
   const [loading, setLoading] = useState(true);          // indicador de carga
   const [error, setError] = useState<string | null>(null); // mensaje de error
+  const [isLoggedIn, setIsLoggedIn] = useState(false);   // si hay sesión activa
 
-  // Efecto: al montar el componente, hacemos fetch a la API
-  useEffect(() => {
-    async function fetchForums() {
-      try {
-        const res = await bffFetch('/api/forums');
-        if (!res.ok) throw new Error('No se pudieron cargar los foros. Intentá de nuevo.');
-        const data: ForumGroup[] = await res.json();
-        setGroups(data);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Error inesperado');
-      } finally {
-        setLoading(false);
-      }
+  // Función de fetch reutilizable: la usamos en la carga inicial y para
+  // refrescar la lista después de crear un foro nuevo.
+  const fetchForums = useCallback(async () => {
+    try {
+      setError(null);
+      const res = await bffFetch('/api/forums');
+      if (!res.ok) throw new Error('No se pudieron cargar los foros. Intentá de nuevo.');
+      const data: ForumGroup[] = await res.json();
+      setGroups(data);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Error inesperado');
+    } finally {
+      setLoading(false);
     }
+  }, []);
+
+  // Efecto: al montar el componente cargamos los foros y leemos la sesión.
+  useEffect(() => {
     fetchForums();
-  }, []); // El array vacío significa que solo se ejecuta una vez
+    // El token mock se guarda en localStorage al iniciar sesión. Si existe,
+    // consideramos que el usuario está logueado y mostramos "Crear foro".
+    setIsLoggedIn(!!localStorage.getItem('mock-token'));
+  }, [fetchForums]);
 
   // Ordenar grupos: la facultad 'General' debe aparecer al final
   const sortedGroups = [...groups].sort((a, b) => {
@@ -294,21 +313,30 @@ export default function ForosPage() {
     return 0;
   });
 
-  // Verificar si hay al menos un subforo visible
-  const hasContent = sortedGroups.some((g) =>
-    g.forums.some((f) => f.subforums.length > 0)
-  );
+  // Verificar si hay al menos un foro para mostrar
+  const hasContent = sortedGroups.some((g) => g.forums.length > 0);
 
   // Renderizado
   return (
     <div className="min-h-screen bg-background">
       {/* Cabecera fija sticky */}
       <header className="border-b border-border bg-card sticky top-0 z-10">
-        <div className="max-w-4xl mx-auto px-4 py-4 sm:py-5">
-          <h1 className="text-xl sm:text-2xl font-bold tracking-tight">Foro UAP</h1>
-          <p className="text-sm text-muted-foreground mt-0.5">
-            Foro de discusión — Universidad Adventista del Plata
-          </p>
+        <div className="max-w-4xl mx-auto px-4 py-4 sm:py-5 flex items-start justify-between gap-4">
+          <div>
+            <h1 className="text-xl sm:text-2xl font-bold tracking-tight">Foro UAP</h1>
+            <p className="text-sm text-muted-foreground mt-0.5">
+              Foro de discusión — Universidad Adventista del Plata
+            </p>
+          </div>
+          {/* "Crear foro": solo visible con sesión activa. Si no hay sesión,
+              ofrecemos un acceso a login en su lugar. */}
+          {isLoggedIn ? (
+            <CreateForumDialog onCreated={fetchForums} />
+          ) : (
+            <Button variant="outline" size="sm" asChild>
+              <Link href="/login">Iniciar sesión</Link>
+            </Button>
+          )}
         </div>
       </header>
 
@@ -331,9 +359,7 @@ export default function ForosPage() {
           <div className="space-y-8">
             {sortedGroups.map((group) => {
               const config = getFacultyConfig(group.faculty);
-              // Filtrar foros que realmente tengan subforos
-              const forumsWithSubforums = group.forums.filter((f) => f.subforums.length > 0);
-              if (forumsWithSubforums.length === 0) return null;
+              if (group.forums.length === 0) return null;
 
               return (
                 <section key={group.faculty} aria-labelledby={`section-${group.faculty}`}>
@@ -352,7 +378,7 @@ export default function ForosPage() {
 
                   {/* Lista de foros dentro de esta facultad */}
                   <div className="space-y-2">
-                    {forumsWithSubforums.map((forum) => (
+                    {group.forums.map((forum) => (
                       <ForumCard key={forum.id} forum={forum} />
                     ))}
                   </div>

@@ -70,7 +70,12 @@ export default function LoginPage() {
         setError(data.error ?? 'Error al iniciar sesión')
       } else {
         // Si el login fue exitoso, guarda los datos del usuario y el token.
-        // Esto dispara el renderizado de la pantalla de bienvenida.
+        // Persistimos el token en localStorage (clave 'mock-token') para que
+        // el resto de la app (crear foro, crear hilo, etc.) sepa que hay sesión
+        // activa y pueda mandarlo en el header Authorization.
+        if (typeof window !== 'undefined' && data?.token) {
+          localStorage.setItem('mock-token', data.token)
+        }
         setResult(data)
       }
     } catch {
