@@ -18,6 +18,7 @@ import { useState, useEffect, useCallback } from 'react';
 // Componente Link de Next.js para navegar entre páginas sin recargar (SPA)
 import Link from 'next/link';
 import { bffFetch } from '@/lib/bff';
+import { getSessionCookie, type SessionData } from '@/lib/auth';
 
 // Modal con el formulario para crear un nuevo foro.
 import { CreateForumDialog } from '@/components/forums/create-forum-dialog';
@@ -280,7 +281,7 @@ export default function ForosPage() {
   const [groups, setGroups] = useState<ForumGroup[]>([]); // datos de foros agrupados
   const [loading, setLoading] = useState(true);          // indicador de carga
   const [error, setError] = useState<string | null>(null); // mensaje de error
-  const [isLoggedIn, setIsLoggedIn] = useState(false);   // si hay sesión activa
+  const [session, setSession] = useState<SessionData | null>(null);
 
   // Función de fetch reutilizable: la usamos en la carga inicial y para
   // refrescar la lista después de crear un foro nuevo.
@@ -301,9 +302,7 @@ export default function ForosPage() {
   // Efecto: al montar el componente cargamos los foros y leemos la sesión.
   useEffect(() => {
     fetchForums();
-    // El token mock se guarda en localStorage al iniciar sesión. Si existe,
-    // consideramos que el usuario está logueado y mostramos "Crear foro".
-    setIsLoggedIn(!!localStorage.getItem('mock-token'));
+    setSession(getSessionCookie());
   }, [fetchForums]);
 
   // Ordenar grupos: la facultad 'General' debe aparecer al final
@@ -328,10 +327,13 @@ export default function ForosPage() {
               Foro de discusión — Universidad Adventista del Plata
             </p>
           </div>
-          {/* "Crear foro": solo visible con sesión activa. Si no hay sesión,
-              ofrecemos un acceso a login en su lugar. */}
-          {isLoggedIn ? (
-            <CreateForumDialog onCreated={fetchForums} />
+          {session ? (
+            <div className="flex items-center gap-3">
+              <span className="text-sm text-muted-foreground hidden sm:inline">
+                <span className="font-medium text-foreground">{session.user.fullName}</span>
+              </span>
+              <CreateForumDialog onCreated={fetchForums} />
+            </div>
           ) : (
             <Button variant="outline" size="sm" asChild>
               <Link href="/login">Iniciar sesión</Link>

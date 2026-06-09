@@ -23,6 +23,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { bffFetch } from '@/lib/bff';
+import { getSessionToken } from '@/lib/auth';
 import { cn } from '@/lib/utils';
 
 // Endpoint del BFF para crear foros. bffFetch antepone NEXT_PUBLIC_BFF_URL,
@@ -110,8 +111,7 @@ export function CreateForumDialog({ onCreated }: { onCreated?: () => void }) {
     setIsSubmitting(true);
     setErrors((prev) => ({ ...prev, general: undefined }));
 
-    // El token mock se guarda en localStorage al iniciar sesión.
-    const token = typeof window !== 'undefined' ? localStorage.getItem('mock-token') : null;
+    const token = getSessionToken();
 
     try {
       const res = await bffFetch(FOROS_ENDPOINT, {
