@@ -1,102 +1,34 @@
-// ============================================================================
-// 1. Directiva de Next.js para ejecutar este componente SOLO en el navegador
-// ============================================================================
-'use client'; 
-/* 
-  ¿Por qué? 
-  - Este componente usa hooks (useState, useEffect) y fetch, que no existen en el servidor.
-  - Next.js, por defecto, renderiza en el servidor (SSR). Con 'use client' forzamos 
-    a que se renderice del lado del cliente, lo que permite interactividad y estado.
-*/
 
-// Hooks de React: estado y efectos secundarios
+'use client';
+
 import { useState, useEffect, useCallback } from 'react';
-// useState: guarda datos que pueden cambiar (foros, loading, error).
-// useEffect: ejecuta código después de que el componente se monta (ej: llamar a la API).
-// useCallback: memoriza la función de fetch para reutilizarla (carga inicial + refresco).
-
-// Componente Link de Next.js para navegar entre páginas sin recargar (SPA)
 import Link from 'next/link';
 import { bffFetch } from '@/lib/bff';
 import { getSessionCookie, type SessionData } from '@/lib/auth';
-
-// Modal con el formulario para crear un nuevo foro.
 import { CreateForumDialog } from '@/components/forums/create-forum-dialog';
-// Botón reutilizable de la UI (para el acceso a login cuando no hay sesión).
 import { Button } from '@/components/ui/button';
+import { MessageSquare } from 'lucide-react';
 
-// Íconos de la librería lucide-react (SVGs como componentes React)
-import { MessageSquare, FileText, Clock } from 'lucide-react';
-// MessageSquare: burbuja de chat → representa subforos.
-// FileText: documento → representa cantidad de hilos.
-// Clock: reloj → representa última actividad.
-
-// ============================================================================
-// Tipos TypeScript: definen la forma exacta de los datos que manejará la UI.
-// Esto permite que el editor nos ayude y evita errores en tiempo de desarrollo.
-// ============================================================================
-
-// Cada subforo (por ejemplo: "Base de Datos" dentro de "Ciencias de la Computación")
-type SubforumItem = {
-  id: string;                 // Identificador único del subforo (UUID o número)
-  name: string;              // Título del subforo (ej: "Consultas SQL")
-  description: string | null; // Texto opcional; si no hay, vale null
-  threadCount: number;       // Cuántos hilos (temas) tiene este subforo
-  totalMessages: number;     // Suma de todos los mensajes de todos los hilos
-  lastMovement: string | null; // Fecha (ISO string) del último mensaje/post; null si no hay actividad
+// Los campos coinciden con los nombres del modelo Mongoose en el BFF
+// _id: MongoDB genera este id automáticamente (con guión bajo)
+// nombre, descripcion, facultad: coinciden con el schema de Foro.js en el BFF
+type Foro = {
+  _id: string;
+  nombre: string;
+  descripcion?: string | null; // opcional: un foro puede no tener descripción
+  facultad: string;
 };
 
-// Un foro puede contener varios subforos (ej: "Ciencias de la Computación" contiene varios subforos)
-type ForumItem = {
-  id: string;
-  name: string;              // Nombre del foro (ej: "Ingeniería Informática")
-  description: string | null;
-  subforums: SubforumItem[]; // Array de subforos → relación de composición
-};
-
-// Agrupación por facultad. La API devolverá un array de estos grupos.
-type ForumGroup = {
-  faculty: string;   // Clave que identifica la facultad (ej: "fci", "General", "fce")
-  forums: ForumItem[]; // Lista de foros que pertenecen a esa facultad
-};
-
-// ─── Configuración de facultades (estilos y nombres legibles) ────────────
-// Objeto que asigna a cada clave de facultad su etiqueta, badge y color CSS
 const FACULTY_CONFIG: Record<string, { label: string; badge: string; color: string }> = {
-  fci: {
-    label: 'Facultad de Cs. Informáticas',
-    badge: 'FCI',
-    color: 'bg-blue-100 text-blue-800',
-  },
-  fce: {
-    label: 'Facultad de Cs. Económicas',
-    badge: 'FCE',
-    color: 'bg-emerald-100 text-emerald-800',
-  },
-  fcs: {
-    label: 'Facultad de Cs. de la Salud',
-    badge: 'FCS',
-    color: 'bg-rose-100 text-rose-800',
-  },
-  ft: {
-    label: 'Facultad de Teología',
-    badge: 'FT',
-    color: 'bg-violet-100 text-violet-800',
-  },
-  faced: {
-    label: 'Facultad de Educación',
-    badge: 'FACED',
-    color: 'bg-amber-100 text-amber-800',
-  },
-  General: {
-    label: 'General',
-    badge: 'General',
-    color: 'bg-slate-100 text-slate-600',
-  },
+  humanidades: { label: 'Facultad de Humanidades', badge: 'FH', color: 'bg-blue-100 text-blue-800' },
+  economicas: { label: 'Facultad de Cs. Económicas', badge: 'FCE', color: 'bg-emerald-100 text-emerald-800' },
+  teologia: { label: 'Facultad de Teología', badge: 'FT', color: 'bg-violet-100 text-violet-800' },
+  salud: { label: 'Facultad de Cs. de la Salud', badge: 'FCS', color: 'bg-rose-100 text-rose-800' },
+  instituto: { label: 'Instituto Superior', badge: 'IS', color: 'bg-amber-100 text-amber-800' },
+  preuniversitario: { label: 'Preuniversitario', badge: 'PRE', color: 'bg-pink-100 text-pink-800' },
+  general: { label: 'General', badge: 'GEN', color: 'bg-slate-100 text-slate-600' },
 };
 
-// Función helper para obtener la configuración de una facultad.
-// Si no existe, usa valores por defecto.
 function getFacultyConfig(faculty: string) {
   return (
     FACULTY_CONFIG[faculty] ??
@@ -108,148 +40,59 @@ function getFacultyConfig(faculty: string) {
   );
 }
 
-// ─── Helpers ─────────────────────────────────────────────────────────────
-// Convierte una fecha a formato relativo: "hace 5 min", "Ayer", "hace 3 días", etc.
-function formatRelativeDate(dateString: string | null): string {
-  if (!dateString) return '—';
-  const date = new Date(dateString);
-  const now = new Date();
-  const diffMs = now.getTime() - date.getTime();
-  const diffMins = Math.floor(diffMs / 60000);
-  const diffHours = Math.floor(diffMins / 60);
-  const diffDays = Math.floor(diffHours / 24);
-
-  if (diffMins < 1) return 'Ahora';
-  if (diffMins < 60) return `hace ${diffMins} min`;
-  if (diffHours < 24) return `hace ${diffHours}h`;
-  if (diffDays === 1) return 'Ayer';
-  if (diffDays < 30) return `hace ${diffDays} días`;
-  return date.toLocaleDateString('es-AR', { day: 'numeric', month: 'short', year: 'numeric' });
-}
-
-// ─── Sub‑componentes ─────────────────────────────────────────────────────
-// Cada fila de subforo (se muestra dentro de un foro)
-function SubforumRow({ subforum }: { subforum: SubforumItem }) {
+function ForoCard({ foro }: { foro: Foro }) {
+  const config = getFacultyConfig(foro.facultad);
   return (
-    <Link
-      href={`/subforos/${subforum.id}`} // Al hacer clic, navega a la página del subforo
-      className="group flex items-center gap-4 px-4 py-3.5 hover:bg-muted/50 transition-colors border-b border-border last:border-0"
-    >
-      {/* Icono a la izquierda */}
-      <div className="shrink-0 w-8 h-8 rounded-md bg-muted flex items-center justify-center group-hover:bg-accent transition-colors">
-        <MessageSquare className="w-4 h-4 text-muted-foreground" />
-      </div>
-
-      {/* Nombre y descripción */}
-      <div className="flex-1 min-w-0">
-        <p className="font-medium text-sm leading-snug group-hover:underline underline-offset-2 truncate">
-          {subforum.name}
-        </p>
-        {subforum.description && (
-          <p className="text-xs text-muted-foreground mt-0.5 truncate">{subforum.description}</p>
-        )}
-      </div>
-
-      {/* Estadísticas: visibles solo en pantallas medianas o más grandes (sm:flex) */}
-      <div className="hidden sm:flex items-center gap-5 shrink-0 text-xs text-muted-foreground">
-        <span className="flex items-center gap-1.5 w-[6rem] justify-end tabular-nums">
-          <FileText className="w-3.5 h-3.5 shrink-0" />
-          {subforum.threadCount}
-          <span className="sr-only sm:not-sr-only">hilos</span>
-        </span>
-        <span className="flex items-center gap-1.5 w-[6.5rem] justify-end tabular-nums">
-          <MessageSquare className="w-3.5 h-3.5 shrink-0" />
-          {subforum.totalMessages}
-          <span className="sr-only sm:not-sr-only">posts</span>
-        </span>
-        <span className="flex items-center gap-1.5 w-[7rem] justify-end">
-          <Clock className="w-3.5 h-3.5 shrink-0" />
-          {formatRelativeDate(subforum.lastMovement)}
-        </span>
-      </div>
-
-      {/* Versión móvil: solo muestra cantidad de hilos */}
-      <div className="sm:hidden shrink-0 text-xs text-muted-foreground">
-        {subforum.threadCount} hilos
-      </div>
-    </Link>
-  );
-}
-
-// Tarjeta que agrupa los subforos de un mismo foro (ej. "Ciencias de la Computación")
-function ForumCard({ forum }: { forum: ForumItem }) {
-  return (
-    <div className="border border-border rounded-lg overflow-hidden bg-card">
-      {/* Cabecera del foro (solo si tiene nombre) */}
-      {forum.name && (
-        <div className="px-4 py-2 bg-muted/40 border-b border-border">
-          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-            {forum.name}
-          </p>
-          {forum.description && (
-            <p className="text-xs text-muted-foreground mt-0.5">{forum.description}</p>
-          )}
+    <div className="border border-border rounded-lg p-4 bg-card">
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex items-start gap-3 flex-1 min-w-0">
+          <div className="shrink-0 w-8 h-8 rounded-md bg-muted flex items-center justify-center mt-0.5">
+            <MessageSquare className="w-4 h-4 text-muted-foreground" />
+          </div>
+          <div className="min-w-0">
+            <p className="font-semibold text-sm leading-snug">
+              {foro.nombre}
+            </p>
+            {foro.descripcion && (
+              <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{foro.descripcion}</p>
+            )}
+          </div>
         </div>
-      )}
-      {/* Lista de subforos dentro de este foro. Si todavía no tiene ninguno
-          (ej: un foro recién creado), mostramos un estado vacío en vez de ocultarlo. */}
-      {forum.subforums.length > 0 ? (
-        forum.subforums.map((subforum) => (
-          <SubforumRow key={subforum.id} subforum={subforum} />
-        ))
-      ) : (
-        <p className="px-4 py-3 text-xs text-muted-foreground italic">
-          Aún no hay subforos en este foro.
-        </p>
-      )}
+        <span className={`shrink-0 text-xs font-bold px-2 py-0.5 rounded-full ${config.color}`}>
+          {config.badge}
+        </span>
+      </div>
     </div>
   );
 }
 
-// ─── Esqueletos de carga (skeleton) ─────────────────────────────────────
-// Una fila genérica de carga
-function SkeletonRow() {
+function SkeletonCard() {
   return (
-    <div className="flex items-center gap-4 px-4 py-3.5 border-b border-border last:border-0">
-      <div className="w-8 h-8 rounded-md bg-muted animate-pulse shrink-0" />
-      <div className="flex-1 space-y-1.5">
-        <div className="h-3.5 bg-muted rounded w-2/5 animate-pulse" />
-        <div className="h-3 bg-muted rounded w-3/5 animate-pulse" />
-      </div>
-      <div className="hidden sm:flex gap-5">
-        <div className="h-3 bg-muted rounded w-14 animate-pulse" />
-        <div className="h-3 bg-muted rounded w-16 animate-pulse" />
-        <div className="h-3 bg-muted rounded w-20 animate-pulse" />
+    <div className="border border-border rounded-lg p-4 bg-card animate-pulse">
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex items-start gap-3 flex-1">
+          <div className="w-8 h-8 rounded-md bg-muted shrink-0" />
+          <div className="flex-1 space-y-1.5">
+            <div className="h-4 bg-muted rounded w-1/2" />
+            <div className="h-3 bg-muted rounded w-3/4" />
+          </div>
+        </div>
+        <div className="h-5 w-14 bg-muted rounded-full shrink-0" />
       </div>
     </div>
   );
 }
 
-// Componente de carga completo (muestra varias secciones con animación)
 function LoadingSkeleton() {
   return (
-    <div className="space-y-8" aria-label="Cargando foros…">
-      {[3, 2].map((rows, i) => (
-        <section key={i} className="space-y-3">
-          <div className="flex items-center gap-2">
-            <div className="h-6 w-14 bg-muted rounded-full animate-pulse" />
-            <div className="h-4 w-52 bg-muted rounded animate-pulse" />
-          </div>
-          <div className="border border-border rounded-lg overflow-hidden bg-card">
-            <div className="px-4 py-2 bg-muted/40 border-b border-border">
-              <div className="h-3 w-32 bg-muted rounded animate-pulse" />
-            </div>
-            {Array.from({ length: rows }).map((_, j) => (
-              <SkeletonRow key={j} />
-            ))}
-          </div>
-        </section>
+    <div className="grid gap-3 sm:grid-cols-2" aria-label="Cargando foros…">
+      {Array.from({ length: 6 }).map((_, i) => (
+        <SkeletonCard key={i} />
       ))}
     </div>
   );
 }
 
-// ─── Estado vacío (sin datos) ───────────────────────────────────────────
 function EmptyState() {
   return (
     <div className="flex flex-col items-center justify-center py-24 text-center">
@@ -264,61 +107,36 @@ function EmptyState() {
   );
 }
 
-// ─── Encabezados de columnas (solo versión desktop) ─────────────────────
-function ColumnHeaders() {
-  return (
-    <div className="hidden sm:flex items-center justify-end pr-4 pb-1 text-xs text-muted-foreground gap-5">
-      <span className="w-[6rem] text-right">Hilos</span>
-      <span className="w-[6.5rem] text-right">Mensajes</span>
-      <span className="w-[7rem] text-right">Última actividad</span>
-    </div>
-  );
-}
-
-// ─── Componente principal de la página ───────────────────────────────────
 export default function ForosPage() {
-  // Estado local
-  const [groups, setGroups] = useState<ForumGroup[]>([]); // datos de foros agrupados
-  const [loading, setLoading] = useState(true);          // indicador de carga
-  const [error, setError] = useState<string | null>(null); // mensaje de error
+  const [foros, setForos] = useState<Foro[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [session, setSession] = useState<SessionData | null>(null);
 
-  // Función de fetch reutilizable: la usamos en la carga inicial y para
-  // refrescar la lista después de crear un foro nuevo.
-  const fetchForums = useCallback(async () => {
+  // useCallback memoriza la función para que no se recree en cada render
+  // Es necesario porque fetchForos está en el array de dependencias de useEffect
+  // Sin useCallback, useEffect se ejecutaría infinitamente
+  const fetchForos = useCallback(async () => {
     try {
       setError(null);
-      const res = await bffFetch('/api/forums');
+      const res = await bffFetch('/foros');
       if (!res.ok) throw new Error('No se pudieron cargar los foros. Intentá de nuevo.');
-      const data: ForumGroup[] = await res.json();
-      setGroups(data);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error inesperado');
+      const data: Foro[] = await res.json();
+      setForos(data);
+    } catch {
+      setError('No se pudieron cargar los foros. El servidor puede estar temporalmente inaccesible.');
     } finally {
       setLoading(false);
     }
   }, []);
 
-  // Efecto: al montar el componente cargamos los foros y leemos la sesión.
   useEffect(() => {
-    fetchForums();
-    setSession(getSessionCookie());
-  }, [fetchForums]);
+    fetchForos();              // carga los foros del BFF al montar el componente
+    setSession(getSessionCookie()); // lee la cookie para saber si hay sesión activa
+  }, [fetchForos]); // se re-ejecuta solo si fetchForos cambia (que nunca cambia gracias a useCallback)
 
-  // Ordenar grupos: la facultad 'General' debe aparecer al final
-  const sortedGroups = [...groups].sort((a, b) => {
-    if (a.faculty === 'General') return 1;
-    if (b.faculty === 'General') return -1;
-    return 0;
-  });
-
-  // Verificar si hay al menos un foro para mostrar
-  const hasContent = sortedGroups.some((g) => g.forums.length > 0);
-
-  // Renderizado
   return (
     <div className="min-h-screen bg-background">
-      {/* Cabecera fija sticky */}
       <header className="border-b border-border bg-card sticky top-0 z-10">
         <div className="max-w-4xl mx-auto px-4 py-4 sm:py-5 flex items-start justify-between gap-4">
           <div>
@@ -332,7 +150,7 @@ export default function ForosPage() {
               <span className="text-sm text-muted-foreground hidden sm:inline">
                 <span className="font-medium text-foreground">{session.user.fullName}</span>
               </span>
-              <CreateForumDialog onCreated={fetchForums} />
+              <CreateForumDialog onCreated={fetchForos} />
             </div>
           ) : (
             <Button variant="outline" size="sm" asChild>
@@ -343,50 +161,21 @@ export default function ForosPage() {
       </header>
 
       <main className="max-w-4xl mx-auto px-4 py-6 sm:py-8">
-        {/* Mostrar skeleton mientras carga */}
         {loading && <LoadingSkeleton />}
 
-        {/* Mostrar error si ocurrió */}
         {!loading && error && (
           <div className="rounded-lg border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive">
             {error}
           </div>
         )}
 
-        {/* Mostrar vacío si no hay datos */}
-        {!loading && !error && !hasContent && <EmptyState />}
+        {!loading && !error && foros.length === 0 && <EmptyState />}
 
-        {/* Mostrar contenido real cuando hay datos */}
-        {!loading && !error && hasContent && (
-          <div className="space-y-8">
-            {sortedGroups.map((group) => {
-              const config = getFacultyConfig(group.faculty);
-              if (group.forums.length === 0) return null;
-
-              return (
-                <section key={group.faculty} aria-labelledby={`section-${group.faculty}`}>
-                  {/* Badge y título de la facultad */}
-                  <div className="flex items-center gap-2.5 mb-3">
-                    <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${config.color}`}>
-                      {config.badge}
-                    </span>
-                    <h2 id={`section-${group.faculty}`} className="text-base font-semibold">
-                      {config.label}
-                    </h2>
-                  </div>
-
-                  {/* Encabezados de columnas (solo desktop) */}
-                  <ColumnHeaders />
-
-                  {/* Lista de foros dentro de esta facultad */}
-                  <div className="space-y-2">
-                    {group.forums.map((forum) => (
-                      <ForumCard key={forum.id} forum={forum} />
-                    ))}
-                  </div>
-                </section>
-              );
-            })}
+        {!loading && !error && foros.length > 0 && (
+          <div className="grid gap-3 sm:grid-cols-2">
+            {foros.map((foro) => (
+              <ForoCard key={foro._id} foro={foro} />
+            ))}
           </div>
         )}
       </main>

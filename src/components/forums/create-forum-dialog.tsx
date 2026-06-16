@@ -1,5 +1,4 @@
 'use client';
-// Este componente corre en el navegador: usa estado, eventos y localStorage.
 
 import { useState } from 'react';
 import { AlertCircle, CheckCircle2, Loader2, Plus } from 'lucide-react';
@@ -27,24 +26,24 @@ import { getSessionToken } from '@/lib/auth';
 import { cn } from '@/lib/utils';
 
 // Endpoint del BFF para crear foros. bffFetch antepone NEXT_PUBLIC_BFF_URL,
-// igual que la carga de foros (GET /api/forums) y el resto de la app.
-const FOROS_ENDPOINT = '/api/forums';
+// igual que la carga de foros (GET /foros) y el resto de la app.
+const FOROS_ENDPOINT = '/foros';
 
 // ─── Facultades disponibles ─────────────────────────────────────────────────────
 // Coinciden con las claves que usa la página de foros para agrupar y mostrar badges.
 const FACULTIES = [
-  { value: 'fci', label: 'Facultad de Cs. Informáticas' },
-  { value: 'fce', label: 'Facultad de Cs. Económicas' },
-  { value: 'fcs', label: 'Facultad de Cs. de la Salud' },
-  { value: 'ft', label: 'Facultad de Teología' },
-  { value: 'faced', label: 'Facultad de Educación' },
-  { value: 'General', label: 'General' },
+  { value: 'humanidades', label: 'Facultad de Humanidades' },
+  { value: 'economicas', label: 'Facultad de Cs. Económicas' },
+  { value: 'teologia', label: 'Facultad de Teología' },
+  { value: 'salud', label: 'Facultad de Cs. de la Salud' },
+  { value: 'instituto', label: 'Instituto Superior' },
+  { value: 'preuniversitario', label: 'Preuniversitario' },
+  { value: 'general', label: 'General' },
 ];
-
 // ─── Tipos ──────────────────────────────────────────────────────────────────────
 type FormState = { name: string; description: string; faculty: string };
 type FormErrors = { name?: string; description?: string; faculty?: string; general?: string };
-type CreatedForum = { id: string; name: string };
+type CreatedForum = { _id: string; nombre: string };
 
 // ─── Validaciones client-side (campos no vacíos) ────────────────────────────────
 function validateName(v: string): string | undefined {
@@ -121,9 +120,9 @@ export function CreateForumDialog({ onCreated }: { onCreated?: () => void }) {
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
         body: JSON.stringify({
-          name: form.name.trim(),
-          description: form.description.trim(),
-          faculty: form.faculty,
+          nombre: form.name.trim(),
+          descripcion: form.description.trim(),
+          facultad: form.faculty,
         }),
       });
 
@@ -154,7 +153,7 @@ export function CreateForumDialog({ onCreated }: { onCreated?: () => void }) {
       }
 
       // 201: foro creado correctamente.
-      setCreated({ id: data.id, name: data.name });
+      setCreated({ _id: data._id, nombre: data.nombre });
       onCreated?.(); // refresca la lista de foros en la página
     } catch {
       setErrors((prev) => ({ ...prev, general: 'Error de conexión. Intentá de nuevo.' }));
@@ -182,7 +181,7 @@ export function CreateForumDialog({ onCreated }: { onCreated?: () => void }) {
             <div className="space-y-1">
               <h2 className="text-base font-semibold">Foro creado</h2>
               <p className="text-sm text-muted-foreground">
-                El foro &ldquo;{created.name}&rdquo; se creó correctamente.
+                El foro &ldquo;{created.nombre}&rdquo; se creó correctamente.
               </p>
             </div>
             <div className="flex gap-2">

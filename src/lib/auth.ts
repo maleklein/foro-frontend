@@ -10,17 +10,15 @@ export type SessionData = {
     email: string
     fullName: string
     role: string
-    faculty: string | null  // null si el usuario no tiene facultad
-    career: string | null   // null si el usuario no tiene carrera
+    faculty: string | null  
+    career: string | null  
   }
 }
 
 // Guarda los datos de sesión en una cookie del browser
 export function setSessionCookie(data: SessionData): void {
-  // Convertimos el objeto a texto y lo codificamos para que no rompa la cookie
   const value = encodeURIComponent(JSON.stringify(data))
-  // 7 días en segundos
-  const maxAge = 60 * 60 * 24 * 7
+  const maxAge = 60 * 60 * 24 * 7 // 7 días en segundos
   // Escribimos la cookie con su nombre, valor, duración y configuración de seguridad
   document.cookie = `${COOKIE_NAME}=${value}; path=/; max-age=${maxAge}; SameSite=Lax`
 }

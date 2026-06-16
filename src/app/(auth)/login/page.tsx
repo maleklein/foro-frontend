@@ -17,10 +17,11 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
+  //  Función que se ejecuta cuando el usuario envía un formulario
   async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
-    setError(null)
-    setLoading(true)
+    e.preventDefault() // evita que el navegador recargue la página y pierda los datos. Ya que es un comportamiento normal al submitear.
+    setError(null) // se borran los errores anteriores
+    setLoading(true) // se muestra el spinner mientras se espera la respuesta del bff
 
     try {
       const res = await bffFetch('/auth/login', {
@@ -34,21 +35,23 @@ export default function LoginPage() {
       if (!res.ok) {
         setError(data?.error ?? 'Error al iniciar sesión')
       } else {
-        setSessionCookie({ token: data.token, user: data.user })
-        router.push('/foros')
+        setSessionCookie({ token: data.token, user: data.user }) // si el login fue exitoso, guarda una cookie en el browser
+        router.push('/foros') // y redirige al usuario
       }
     } catch {
-      setError('Error de conexión. Intentá de nuevo.')
-    } finally {
+      setError('Error de conexión. Intentá de nuevo.') // se ejecuta si el BFF no está corriendo, sin internet, etc
+    } finally { // salga bien o salga mal, se desactiva el spinner
       setLoading(false)
     }
   }
 
+  // Renderizado
   return (
+    // onSubmit conecta el formulario con handleSubmit — se ejecuta al apretar Ingresar o Enter
     <form onSubmit={handleSubmit} className="rounded-xl border border-border bg-card p-6 shadow-sm space-y-5">
 
       <div className="space-y-1">
-        <h2 className="text-xl font-semibold text-foreground">Iniciar sesión</h2>
+        <h2 className="text-xl font-semibold text-foreground">Iniciar sesión</h2> 
         <p className="text-sm text-muted-foreground">Ingresá con tu cuenta universitaria</p>
       </div>
 
@@ -66,7 +69,7 @@ export default function LoginPage() {
           </label>
           <Input
             id="email"
-            type="email"
+            type="email" // el navegador valida el formato de email. Haciendo aparececer una ventana de error
             placeholder="tu@uap.edu.ar"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
@@ -83,20 +86,20 @@ export default function LoginPage() {
           <div className="relative">
             <Input
               id="password"
-              type={showPassword ? 'text' : 'password'}
-              placeholder="••••••••"
-              value={password}
+              type={showPassword ? 'text' : 'password'} // input que reacciona al estado. Si showPassword es false (o sea type = password), el navegador automaticamente muestra puntos negros.
+              // Si showPassword es true --> type="text" --> se ve la contraseña.
+              // Si showPassword es false --> type="password"--> se ven los puntitos.
+              placeholder="••••••••" // texto que aparece solo cuando está vacío el input.
+              value={password} // vincula el input con el estado password mostrando en el input lo que relfeja el valor actual del estado. 
               onChange={(e) => setPassword(e.target.value)}
-              required
               disabled={loading}
               autoComplete="current-password"
               className="pr-9"
             />
             <button
-              type="button"
-              onClick={() => setShowPassword(!showPassword)}
-              className="absolute inset-y-0 right-0 flex items-center pr-2.5 text-muted-foreground hover:text-foreground transition-colors"
-              tabIndex={-1}
+              type="button"  // sin esto, al hacer click submitearía el formulario
+              onClick={() => setShowPassword(!showPassword)} // alterna entre true y false
+              tabIndex={-1}  // el Tab del teclado lo saltea
             >
               {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
             </button>

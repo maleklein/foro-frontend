@@ -20,7 +20,6 @@ export function getBffUrl(path: string) {
   return `${BFF_URL}${cleanPath}`
 }
 
-// Wrapper del fetch nativo de JavaScript.
 // En vez de escribir fetch('http://localhost:4000/foros') en cada componente,
 // escribís bffFetch('/foros') y él construye la URL completa solo.
 // init es opcional: permite pasar opciones como method, headers, body (para POST, etc.)
