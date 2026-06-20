@@ -48,15 +48,24 @@ export default function LoginPage() {
   // Renderizado
   return (
     // onSubmit conecta el formulario con handleSubmit — se ejecuta al apretar Ingresar o Enter
-    <form onSubmit={handleSubmit} className="rounded-xl border border-border bg-card p-6 shadow-sm space-y-5">
+    // aria-busy le avisa a lectores de pantalla que el form está en proceso
+    <form
+      onSubmit={handleSubmit}
+      aria-busy={loading}
+      className="rounded-xl border border-border bg-card p-6 shadow-sm space-y-5"
+    >
 
       <div className="space-y-1">
-        <h2 className="text-xl font-semibold text-foreground">Iniciar sesión</h2> 
+        <h2 className="text-xl font-semibold text-foreground">Iniciar sesión</h2>
         <p className="text-sm text-muted-foreground">Ingresá con tu cuenta universitaria</p>
       </div>
 
       {error && (
-        <div className="rounded-lg bg-destructive/10 border border-destructive/20 px-3 py-2 text-sm text-destructive">
+        // role="alert" hace que los lectores de pantalla anuncien el error apenas aparece
+        <div
+          role="alert"
+          className="rounded-lg bg-destructive/10 border border-destructive/20 px-3 py-2 text-sm text-destructive"
+        >
           {error}
         </div>
       )}
@@ -90,16 +99,26 @@ export default function LoginPage() {
               // Si showPassword es true --> type="text" --> se ve la contraseña.
               // Si showPassword es false --> type="password"--> se ven los puntitos.
               placeholder="••••••••" // texto que aparece solo cuando está vacío el input.
-              value={password} // vincula el input con el estado password mostrando en el input lo que relfeja el valor actual del estado. 
+              value={password} // vincula el input con el estado password mostrando en el input lo que relfeja el valor actual del estado.
               onChange={(e) => setPassword(e.target.value)}
               disabled={loading}
               autoComplete="current-password"
-              className="pr-9"
+              className="pr-10"
             />
+            {/*
+              Botón del ojo posicionado en la esquina derecha del input.
+              - absolute + right-1 + inset-y-1: centrado vertical sin tener que usar translate
+              - h-8 w-8: tap-target de 32px (mínimo cómodo en mobile sin agrandar el input)
+              - aria-label: lectores de pantalla anuncian qué hace el botón
+              - aria-pressed: comunica el estado (true cuando la pass está visible)
+            */}
             <button
-              type="button"  // sin esto, al hacer click submitearía el formulario
-              onClick={() => setShowPassword(!showPassword)} // alterna entre true y false
-              tabIndex={-1}  // el Tab del teclado lo saltea
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              tabIndex={-1}
+              aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+              aria-pressed={showPassword}
+              className="absolute right-1 inset-y-1 flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
               {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
             </button>
@@ -110,7 +129,7 @@ export default function LoginPage() {
       <div className="flex justify-end">
         <Link
           href="/recover-password"
-          className="text-sm text-primary hover:underline underline-offset-4"
+          className="text-sm text-primary hover:underline underline-offset-4 py-1"
         >
           ¿Olvidaste tu contraseña?
         </Link>

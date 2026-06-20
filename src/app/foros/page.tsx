@@ -44,14 +44,17 @@ function getFacultyConfig(faculty: string) {
 function ForoCard({ foro }: { foro: Foro }) {
   const config = getFacultyConfig(foro.facultad);
   return (
-    <div className="border border-border rounded-lg p-4 bg-card">
+    // hover:bg-accent/40 + transition-colors: feedback visual al pasar el mouse
+    // hover:border-foreground/20: borde un poco más visible en hover
+    // sm:p-5: padding más generoso en pantallas grandes
+    <div className="group border border-border rounded-lg p-4 sm:p-5 bg-card transition-colors hover:bg-accent/40 hover:border-foreground/20">
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-start gap-3 flex-1 min-w-0">
-          <div className="shrink-0 w-8 h-8 rounded-md bg-muted flex items-center justify-center mt-0.5">
+          <div className="shrink-0 w-8 h-8 rounded-md bg-muted flex items-center justify-center mt-0.5 transition-colors group-hover:bg-muted-foreground/15">
             <MessageSquare className="w-4 h-4 text-muted-foreground" />
           </div>
           <div className="min-w-0">
-            <p className="font-semibold text-sm leading-snug">
+            <p className="font-semibold text-sm leading-snug break-words">
               {foro.nombre}
             </p>
             {foro.descripcion && (
@@ -59,7 +62,11 @@ function ForoCard({ foro }: { foro: Foro }) {
             )}
           </div>
         </div>
-        <span className={`shrink-0 text-xs font-bold px-2 py-0.5 rounded-full ${config.color}`}>
+        <span
+          className={`shrink-0 text-xs font-bold px-2 py-0.5 rounded-full ${config.color}`}
+          aria-label={`Facultad: ${config.label}`}
+          title={config.label}
+        >
           {config.badge}
         </span>
       </div>
@@ -138,21 +145,27 @@ export default function ForosPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <header className="border-b border-border bg-card sticky top-0 z-10">
-        <div className="max-w-4xl mx-auto px-4 py-4 sm:py-5 flex items-start justify-between gap-4">
-          <div>
+      {/*
+        backdrop-blur + bg-card/80 hacen que el header tenga un look más moderno
+        cuando se scrollea por encima del contenido. supports-[backdrop-filter]
+        es un fallback: si el navegador no lo soporta, se queda con bg-card opaco.
+      */}
+      <header className="border-b border-border bg-card sticky top-0 z-10 supports-[backdrop-filter]:bg-card/80 supports-[backdrop-filter]:backdrop-blur">
+        <div className="max-w-4xl mx-auto px-4 py-4 sm:py-5 flex flex-wrap items-start justify-between gap-3">
+          <div className="min-w-0">
             <h1 className="text-xl sm:text-2xl font-bold tracking-tight">Foro UAP</h1>
-            <p className="text-sm text-muted-foreground mt-0.5">
+            <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">
               Foro de discusión — Universidad Adventista del Plata
             </p>
           </div>
           {session ? (
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 sm:gap-3 shrink-0">
               <UserMenu session={session} />
               <CreateForumDialog onCreated={fetchForos} />
             </div>
           ) : (
-            <Button variant="outline" size="sm" asChild>
+            // min-h-9: tap-target cómodo en mobile (36px)
+            <Button variant="outline" size="sm" asChild className="min-h-9 shrink-0">
               <Link href="/login">Iniciar sesión</Link>
             </Button>
           )}
@@ -163,7 +176,11 @@ export default function ForosPage() {
         {loading && <LoadingSkeleton />}
 
         {!loading && error && (
-          <div className="rounded-lg border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive">
+          // role="alert" para anunciar el error a lectores de pantalla
+          <div
+            role="alert"
+            className="rounded-lg border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive"
+          >
             {error}
           </div>
         )}
