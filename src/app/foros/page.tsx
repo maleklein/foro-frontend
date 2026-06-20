@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { bffFetch } from '@/lib/bff';
 import { getSessionCookie, type SessionData } from '@/lib/auth';
 import { CreateForumDialog } from '@/components/forums/create-forum-dialog';
+import { UserMenu } from '@/components/user-menu';
 import { Button } from '@/components/ui/button';
 import { MessageSquare } from 'lucide-react';
 
@@ -147,9 +148,7 @@ export default function ForosPage() {
           </div>
           {session ? (
             <div className="flex items-center gap-3">
-              <span className="text-sm text-muted-foreground hidden sm:inline">
-                <span className="font-medium text-foreground">{session.user.fullName}</span>
-              </span>
+              <UserMenu session={session} />
               <CreateForumDialog onCreated={fetchForos} />
             </div>
           ) : (
