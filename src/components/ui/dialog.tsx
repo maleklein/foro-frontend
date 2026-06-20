@@ -7,30 +7,35 @@ import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { XIcon } from "lucide-react"
 
+// Contenedor general del modal — controla si está abierto o cerrado
 function Dialog({
   ...props
 }: React.ComponentProps<typeof DialogPrimitive.Root>) {
   return <DialogPrimitive.Root data-slot="dialog" {...props} />
 }
 
+// El botón u elemento que abre el modal al hacer click
 function DialogTrigger({
   ...props
 }: React.ComponentProps<typeof DialogPrimitive.Trigger>) {
   return <DialogPrimitive.Trigger data-slot="dialog-trigger" {...props} />
 }
 
+// Transporta el modal fuera del DOM normal para que aparezca siempre encima de todo
 function DialogPortal({
   ...props
 }: React.ComponentProps<typeof DialogPrimitive.Portal>) {
   return <DialogPrimitive.Portal data-slot="dialog-portal" {...props} />
 }
 
+// Botón para cerrar el modal desde adentro
 function DialogClose({
   ...props
 }: React.ComponentProps<typeof DialogPrimitive.Close>) {
   return <DialogPrimitive.Close data-slot="dialog-close" {...props} />
 }
 
+// El fondo oscuro semitransparente que aparece detrás del modal
 function DialogOverlay({
   className,
   ...props
@@ -47,6 +52,7 @@ function DialogOverlay({
   )
 }
 
+// La ventana blanca del modal — incluye el fondo oscuro y la X para cerrar
 function DialogContent({
   className,
   children,
@@ -85,6 +91,7 @@ function DialogContent({
   )
 }
 
+// La parte superior del modal — agrupa el título y la descripción
 function DialogHeader({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div
@@ -95,6 +102,7 @@ function DialogHeader({ className, ...props }: React.ComponentProps<"div">) {
   )
 }
 
+// La parte inferior del modal — agrupa los botones de acción
 function DialogFooter({
   className,
   showCloseButton = false,
@@ -122,6 +130,7 @@ function DialogFooter({
   )
 }
 
+// El título principal del modal
 function DialogTitle({
   className,
   ...props
@@ -138,6 +147,7 @@ function DialogTitle({
   )
 }
 
+// El subtítulo o texto descriptivo debajo del título
 function DialogDescription({
   className,
   ...props
