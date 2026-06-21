@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { bffFetch } from '@/lib/bff';
 import { getSessionCookie, type SessionData } from '@/lib/auth';
 import { CreateForumDialog } from '@/components/forums/create-forum-dialog';
+import { SyncButton } from '@/components/forums/sync-button';
 import { UserMenu } from '@/components/user-menu';
 import { Button } from '@/components/ui/button';
 import { MessageSquare } from 'lucide-react';
@@ -161,6 +162,8 @@ export default function ForosPage() {
           {session ? (
             <div className="flex items-center gap-2 sm:gap-3 shrink-0">
               <UserMenu session={session} />
+              {/* GIA-7: dispara GET /sync/foros del BFF y refresca la lista cuando termina. */}
+              <SyncButton onSynced={fetchForos} />
               <CreateForumDialog onCreated={fetchForos} />
             </div>
           ) : (
