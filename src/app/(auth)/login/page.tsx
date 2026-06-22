@@ -24,8 +24,12 @@ export default function LoginPage() {
     setLoading(true) // se muestra el spinner mientras se espera la respuesta del bff
 
     try {
+      // credentials: 'include' hace que el browser acepte y persista la
+      // cookie HttpOnly de sesión que el BFF setea en la respuesta del
+      // login. Es lo que mantiene autenticadas las requests siguientes.
       const res = await bffFetch('/auth/login', {
         method: 'POST',
+        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
       })
@@ -35,7 +39,10 @@ export default function LoginPage() {
       if (!res.ok) {
         setError(data?.error ?? 'Error al iniciar sesión')
       } else {
-        setSessionCookie({ token: data.token, user: data.user }) // si el login fue exitoso, guarda una cookie en el browser
+        // Guardamos los datos del usuario en una cookie del browser (legible
+        // por JS, distinta a la HttpOnly del BFF) para poder mostrar el
+        // nombre, el rol, y saber si hay sesión activa sin pegarle al BFF.
+        setSessionCookie({ user: data.user })
         router.push('/foros') // y redirige al usuario
       }
     } catch {

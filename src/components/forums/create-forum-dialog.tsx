@@ -22,7 +22,6 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { bffFetch } from '@/lib/bff';
-import { getSessionToken } from '@/lib/auth';
 import { cn } from '@/lib/utils';
 
 // Endpoint del BFF para crear foros. bffFetch antepone NEXT_PUBLIC_BFF_URL,
@@ -110,14 +109,17 @@ export function CreateForumDialog({ onCreated }: { onCreated?: () => void }) {
     setIsSubmitting(true);
     setErrors((prev) => ({ ...prev, general: undefined }));
 
-    const token = getSessionToken();
-
     try {
+      // La autenticación con el BFF la maneja la cookie HttpOnly que el BFF
+      // setea al hacer login. `credentials: 'include'` hace que el browser
+      // mande esa cookie en este request, así el BFF sabe quién está creando
+      // el foro. No usamos Authorization Bearer porque el BFF no devuelve
+      // ningún token al frontend.
       const res = await bffFetch(FOROS_ENDPOINT, {
         method: 'POST',
+        credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
         body: JSON.stringify({
           nombre: form.name.trim(),

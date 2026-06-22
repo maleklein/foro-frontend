@@ -26,10 +26,12 @@ export function UserMenu({ session }: { session: SessionData }) {
   return (
     <DropdownMenu>
 
-      {/* Botón que muestra el nombre del usuario y abre el dropdown */}
+      {/* Botón que muestra el username del usuario y abre el dropdown.
+          Usamos username porque es el dato que el BFF realmente expone
+          (el backend Java no guarda fullName todavía). */}
       <DropdownMenuTrigger asChild>
         <Button variant="outline" size="sm">
-          {session.user.fullName}
+          {session.user.username}
           <ChevronDown className="size-4" />
         </Button>
       </DropdownMenuTrigger>
@@ -39,7 +41,7 @@ export function UserMenu({ session }: { session: SessionData }) {
 
         {/* Info del usuario — solo texto, no se puede clickear */}
         <DropdownMenuLabel>
-          <p className="font-medium">{session.user.fullName}</p>
+          <p className="font-medium">{session.user.username}</p>
           <p className="text-xs text-muted-foreground font-normal">{session.user.email}</p>
         </DropdownMenuLabel>
 

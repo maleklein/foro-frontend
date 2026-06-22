@@ -1,17 +1,19 @@
 // Nombre de la cookie donde guardamos la sesión del usuario
 const COOKIE_NAME = 'foro_session'
 
-// Forma de los datos que guardamos en la cookie
+// Forma de los datos que guardamos en la cookie.
+// Coincide 1:1 con la respuesta del BFF `POST /auth/login`:
+//   { user: { id, email, username, role } }
+// No incluye `token` porque la autenticación entre el browser y el BFF
+// la maneja el BFF con una cookie HttpOnly aparte (la setea él mismo en
+// la respuesta del login). Esta cookie de acá es solo para datos
+// visibles del usuario (nombre, rol) y para saber si hay sesión activa.
 export type SessionData = {
-  token: string   // token que devuelve el BFF al hacer login
   user: {
     id: string
-    username: string
     email: string
-    fullName: string
+    username: string
     role: string
-    faculty: string | null  
-    career: string | null  
   }
 }
 
@@ -37,12 +39,6 @@ export function getSessionCookie(): SessionData | null {
     // Si la cookie está corrupta, la ignoramos
     return null
   }
-}
-
-// Shortcut para obtener solo el token sin el objeto completo
-// Lo usamos cuando hacemos requests al BFF que requieren autenticación
-export function getSessionToken(): string | null {
-  return getSessionCookie()?.token ?? null
 }
 
 // Borra la cookie — se usa al cerrar sesión
