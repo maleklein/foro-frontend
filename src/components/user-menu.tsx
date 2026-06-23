@@ -25,8 +25,7 @@ export function UserMenu({ session }: { session: SessionData }) {
 
   return (
     <DropdownMenu>
-
-      {/* Botón que muestra el nombre del usuario y abre el dropdown */}
+      {/* Botón que muestra el username del usuario y abre el dropdown */}
       <DropdownMenuTrigger>
         <button className="inline-flex items-center gap-1 text-sm border border-border rounded-lg px-2.5 h-7 hover:bg-muted">
           {session.user.username}
