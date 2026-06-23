@@ -25,15 +25,12 @@ export function UserMenu({ session }: { session: SessionData }) {
 
   return (
     <DropdownMenu>
-
-      {/* Botón que muestra el username del usuario y abre el dropdown.
-          Usamos username porque es el dato que el BFF realmente expone
-          (el backend Java no guarda fullName todavía). */}
-      <DropdownMenuTrigger asChild>
-        <Button variant="outline" size="sm">
+      {/* Botón que muestra el username del usuario y abre el dropdown */}
+      <DropdownMenuTrigger>
+        <button className="inline-flex items-center gap-1 text-sm border border-border rounded-lg px-2.5 h-7 hover:bg-muted">
           {session.user.username}
           <ChevronDown className="size-4" />
-        </Button>
+        </button>
       </DropdownMenuTrigger>
 
       {/* Lista desplegable */}
