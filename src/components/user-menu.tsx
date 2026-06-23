@@ -27,11 +27,11 @@ export function UserMenu({ session }: { session: SessionData }) {
     <DropdownMenu>
 
       {/* Botón que muestra el nombre del usuario y abre el dropdown */}
-      <DropdownMenuTrigger asChild>
-        <Button variant="outline" size="sm">
-          {session.user.fullName}
+      <DropdownMenuTrigger>
+        <button className="inline-flex items-center gap-1 text-sm border border-border rounded-lg px-2.5 h-7 hover:bg-muted">
+          {session.user.username}
           <ChevronDown className="size-4" />
-        </Button>
+        </button>
       </DropdownMenuTrigger>
 
       {/* Lista desplegable */}
@@ -39,7 +39,7 @@ export function UserMenu({ session }: { session: SessionData }) {
 
         {/* Info del usuario — solo texto, no se puede clickear */}
         <DropdownMenuLabel>
-          <p className="font-medium">{session.user.fullName}</p>
+          <p className="font-medium">{session.user.username}</p>
           <p className="text-xs text-muted-foreground font-normal">{session.user.email}</p>
         </DropdownMenuLabel>
 

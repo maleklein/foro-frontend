@@ -3,15 +3,15 @@ const COOKIE_NAME = 'foro_session'
 
 // Forma de los datos que guardamos en la cookie
 export type SessionData = {
-  token: string   // token que devuelve el BFF al hacer login
+  token?: string        // opcional
   user: {
     id: string
     username: string
     email: string
-    fullName: string
+    fullName?: string   // opcional — el BFF no lo devuelve
     role: string
-    faculty: string | null  
-    career: string | null  
+    faculty?: string | null
+    career?: string | null
   }
 }
 
